@@ -11,6 +11,8 @@ export const protect = async (req, res, next) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             // Récupère l'user correspondant (sans le password)
             req.user = await User.findById(decoded.id).select('-password');
+
+            
             // passe au controller suivant
             return next();
         } catch (err) {
@@ -20,4 +22,13 @@ export const protect = async (req, res, next) => {
 
     // pas de token fourni
     return res.status(401).json({ message: 'Not authorized, no token' });
+};
+
+
+// facultatif ty
+export const isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === "admin") {
+        return next();
+    }
+    return res.status(403).json({ message: "Access denied: Admin only" });
 };
