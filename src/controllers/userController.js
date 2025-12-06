@@ -44,9 +44,11 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { password, ...rest } = req.body;
+        const { password, role ,  ...rest } = req.body;
 
         let updatedUser;
+
+        if (role) delete rest.role;
 
         if (password) {
             // si il y a un modif sur mdp (post mdp by front )
