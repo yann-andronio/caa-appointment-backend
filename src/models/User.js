@@ -12,8 +12,8 @@ const userSchema = mongoose.Schema({
 
 // hashage de mdp 
 userSchema.pre('save', async function () {
-    if (!this.isModified('password')) return; // typo corrigée et plus besoin de next()
-    this.password = await bcrypt.hash(this.password, 10);
+    if (!this.isModified('password')) return;
+    this.password = bcrypt.hash(this.password, 10);
 });
 
 

@@ -44,32 +44,32 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { password, role ,  ...rest } = req.body;
+        const { password, role, ...rest } = req.body;
 
-        let updatedUser;
-
+        // Ne jamais laisser l'utilisateur changer son rôle
         if (role) delete rest.role;
 
-        if (password) {
-            // si il y a un modif sur mdp (post mdp by front )
-            const user = await User.findById(id);
-            if (!user) return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
+        const user = await User.findById(id);
+        if (!user) return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
 
-            user.password = password;
-            Object.assign(user, rest);      
-            updatedUser = await user.save(); // mi resave donc redeclanche le hache du mdp selon la condition @model
-        } else {
-            // Update rapide pour les autres champs
-            //runValidators: true → vérifie les règles du modèle (required, enum, etc.)
-            updatedUser = await User.findByIdAndUpdate(id, rest, { new: true, runValidators: true });
-            if (!updatedUser) return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
+       
+        if (req.user.role !== "admin" && req.user._id.toString() !== id) {
+            return res.status(403).json({ success: false, message: "Vous ne pouvez modifier que votre compte" });
         }
+
+     
+        if (password) user.password = password;
+
+        // MAJ autres champs
+        Object.assign(user, rest);
+        const updatedUser = await user.save();
 
         res.status(200).json({
             success: true,
             message: "Utilisateur mis à jour",
             data: formatUser(updatedUser)
         });
+
     } catch (err) {
         res.status(500).json({
             success: false,

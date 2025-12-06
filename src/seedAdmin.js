@@ -1,5 +1,4 @@
 import User from "./models/User.js";
-import bcrypt from "bcryptjs";
 
 export const seedAdmin = async () => {
     try {
@@ -14,7 +13,7 @@ export const seedAdmin = async () => {
             nom: process.env.ADMIN_NOM || "Admin",
             prenom: process.env.ADMIN_PRENOM || "Default",
             email: process.env.ADMIN_EMAIL,
-            password: bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10),
+            password: process.env.ADMIN_PASSWORD,
             role: "admin"
         });
 
