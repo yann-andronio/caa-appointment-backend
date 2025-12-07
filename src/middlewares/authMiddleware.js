@@ -1,34 +1,31 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
 export const protect = async (req, res, next) => {
-    let token;
+    try {
+        const authHeader = req.headers.authorization;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
-        try {
-            // Vérifie la validité du token et récupère le payload
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            // Récupère l'user correspondant (sans le password)
-            req.user = await User.findById(decoded.id).select('-password');
-
-            
-            // passe au controller suivant
-            return next();
-        } catch (err) {
-            return res.status(401).json({ message: 'Not authorized, token failed' });
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ message: "Accès refusé : token manquant" });
         }
-    }
 
-    // pas de token fourni
-    return res.status(401).json({ message: 'Not authorized, no token' });
+        const token = authHeader.split(" ")[1];
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Récupère l'user correspondant (sans le password)
+        req.user = await User.findById(decoded.id).select("-password");
+
+        if (!req.user) {
+            return res.status(401).json({ message: "Utilisateur non trouvé" });
+        }
+
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "Token invalide ou expiré" });
+    }
 };
 
-
-// facultatif ty
 export const isAdmin = (req, res, next) => {
-    if (req.user && req.user.role === "admin") {
-        return next();
-    }
-    return res.status(403).json({ message: "Access denied: Admin only" });
+    if (req.user?.role === "admin") return next();
+    return res.status(403).json({ message: "Accès réservé aux admins" });
 };

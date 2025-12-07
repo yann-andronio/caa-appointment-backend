@@ -46,17 +46,23 @@ export const updateUser = async (req, res) => {
         const { id } = req.params;
         const { password, role, ...rest } = req.body;
 
-        // Ne jamais laisser l'utilisateur changer son rôle
-        if (role) delete rest.role;
 
         const user = await User.findById(id);
         if (!user) return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
+
+        if (role && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Vous ne pouvez pas modifier le rôle" });
+        }
 
        
         if (req.user.role !== "admin" && req.user._id.toString() !== id) {
             return res.status(403).json({ success: false, message: "Vous ne pouvez modifier que votre compte" });
         }
 
+
+        if (role && req.user.role === "admin") {
+            user.role = role;
+        }
      
         if (password) user.password = password;
 
