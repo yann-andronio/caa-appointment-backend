@@ -1,6 +1,6 @@
 import express from "express";
 import { createAppointment, getAppointments, updateAppointment, deleteAppointment , getAppointmentById } from "../controllers/appointmentController.js";
-import { protect } from "../middleware/authMiddleware.js"; 
+import { protect } from "../middlewares/authMiddleware.js"; 
 
 const router = express.Router();
 

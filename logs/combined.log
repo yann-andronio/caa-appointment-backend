@@ -1,0 +1,12 @@
+{"level":"info","message":"User registered: a@example.com","service":"user-service","timestamp":"2025-12-08 22:47:26"}
+{"level":"info","message":"User registered: l@example.com","service":"user-service","timestamp":"2025-12-08 22:47:59"}
+{"level":"info","message":"User registered: la@example.com","service":"user-service","timestamp":"2025-12-08 22:49:03"}
+{"level":"info","message":"User registered: la@example.com","service":"user-service","timestamp":"2025-12-08 22:53:47"}
+{"level":"info","message":"User logged in: a@example.com","service":"user-service","timestamp":"2025-12-08 22:55:01"}
+{"level":"info","message":"User logged in: a@example.com","service":"user-service","timestamp":"2025-12-08 23:00:57"}
+{"level":"error","message":"Refresh token error: jwt is not defined","service":"user-service","timestamp":"2025-12-08 23:21:19"}
+{"level":"error","message":"Refresh token error: jwt is not defined","service":"user-service","timestamp":"2025-12-08 23:21:26"}
+{"level":"warn","message":"Login failed: user not found - a@example.com","service":"user-service","timestamp":"2025-12-08 23:21:35"}
+{"level":"warn","message":"Login failed: user not found - New@example.com","service":"user-service","timestamp":"2025-12-08 23:21:54"}
+{"level":"warn","message":"Login failed: wrong password - new@example.com","service":"user-service","timestamp":"2025-12-08 23:22:05"}
+{"level":"info","message":"User logged in: new@example.com","service":"user-service","timestamp":"2025-12-08 23:22:22"}
