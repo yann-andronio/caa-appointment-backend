@@ -78,11 +78,7 @@ export const updateAppointment = async (req, res) => {
             updateData.status = status;
         }
 
-        const updatedAppointment = await Appointment.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true }
-        );
+        const updatedAppointment = await Appointment.findByIdAndUpdate( id, updateData, { new: true });
 
         res.status(200).json({
             success: true,
@@ -97,7 +93,7 @@ export const updateAppointment = async (req, res) => {
 
 
 
-// Supprimer un rendez-vous (user supprime son rdv)
+
 export const deleteAppointment = async (req, res) => {
     try {
         const { id } = req.params;
