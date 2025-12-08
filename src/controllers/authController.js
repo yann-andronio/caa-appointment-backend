@@ -1,5 +1,6 @@
+import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { generateAccessToken, generateRefreshToken, hashToken , verifyHashedToken } from "../utils/token.js";
+import { generateAccessToken, generateRefreshToken, hashToken, verifyHashedToken } from "../utils/token.js";
 import { formatUser } from "../utils/formatUser.js";
 import logger from "../config/logger.js";
 
@@ -9,26 +10,30 @@ export const register = async (req, res) => {
     if (!email || !password || !nom || !prenom)
         return res.status(400).json({ message: "Champs requis manquants" });
 
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(409).json({ message: "Email déjà utilisé" });
+    try {
+        const exists = await User.findOne({ email });
+        if (exists) return res.status(409).json({ message: "Email déjà utilisé" });
 
-    const user = await User.create({ nom, prenom, email, password });
+        const user = await User.create({ nom, prenom, email, password });
 
-    const access = generateAccessToken(user._id);
-    const refresh = generateRefreshToken(user._id);
-    const hashedRefresh = await hashToken(refresh);
+        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
 
-    user.refreshToken = hashedRefresh;
-    await user.save();
+        user.refreshToken = await hashToken(refreshToken);
+        await user.save();
 
-    logger.info(`User registered: ${email}`);
+        logger.info(`User registered: ${email}`);
 
-    res.status(201).json({
-        success: true,
-        user: formatUser(user),
-        accessToken: access,
-        refreshToken: refresh
-    });
+        res.status(201).json({
+            success: true,
+            user: formatUser(user),
+            accessToken,
+            refreshToken
+        });
+    } catch (err) {
+        logger.error(`Register error: ${err.message}`);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
 };
 
 export const login = async (req, res) => {
@@ -36,88 +41,80 @@ export const login = async (req, res) => {
 
     try {
         const user = await User.findOne({ email });
-        if (!user) {
-            logger.warn(`Login failed: user not found - ${email}`);
-            return res.status(404).json({ message: "Utilisateur introuvable" });
-        }
+        if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
 
         const isMatch = await user.matchPassword(password);
-        if (!isMatch) {
-            logger.warn(`Login failed: wrong password - ${email}`);
-            return res.status(401).json({ message: "Mot de passe incorrect" });
-        }
+        if (!isMatch) return res.status(401).json({ message: "Mot de passe incorrect" });
 
-        const access = generateAccessToken(user._id);
-        const refresh = generateRefreshToken(user._id);
-        const hashedRefresh = await hashToken(refresh);
+        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
 
-
-        user.refreshToken = hashedRefresh;
+        user.refreshToken = await hashToken(refreshToken);
         await user.save();
 
         logger.info(`User logged in: ${email}`);
 
-        return res.status(200).json({
+        res.status(200).json({
             success: true,
             user: formatUser(user),
-            accessToken: access,
-            refreshToken: refresh
+            accessToken,
+            refreshToken
         });
     } catch (err) {
         logger.error(`Login error: ${err.message}`);
-        return res.status(500).json({ message: "Erreur serveur" });
+        res.status(500).json({ message: "Erreur serveur" });
     }
 };
-
-
 
 export const logout = async (req, res) => {
     const { id } = req.user;
 
-    const user = await User.findById(id);
-    if (!user) return res.status(400).json({ message: "Utilisateur introuvable" });
+    try {
+        const user = await User.findById(id);
+        if (!user) return res.status(400).json({ message: "Utilisateur introuvable" });
 
-    user.refreshToken = null;
-    await user.save();
+        user.refreshToken = null;
+        await user.save();
 
-    res.json({ message: "Déconnexion effectuée" });
+        res.json({ message: "Déconnexion effectuée" });
+    } catch (err) {
+        logger.error(`Logout error: ${err.message}`);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
 };
-
-
-
 
 export const refreshToken = async (req, res) => {
     const { token } = req.body;
-    if (!token) {
-        logger.warn("Refresh token manquant");
-        return res.status(401).json({ message: "Refresh token manquant" });
-    }
+
+    if (!token) return res.status(401).json({ message: "Refresh token manquant" });
 
     try {
+        // Vérifier et décoder le token
         const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
         const user = await User.findById(decoded.id);
-        if (!user) {
-            logger.warn(`Refresh failed: user not found - ${decoded.id}`);
-            return res.status(404).json({ message: "Utilisateur introuvable" });
-        }
+        if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
 
-        // Vérifier que le refresh token correspond à celui en DB
+        // Vérifier que le token correspond au hash stocké
         const isValid = await verifyHashedToken(token, user.refreshToken);
         if (!isValid) return res.status(401).json({ message: "Refresh token invalide" });
 
+        // Générer de nouveaux tokens
+        const newAccessToken = generateAccessToken(user._id);
+        const newRefreshToken = generateRefreshToken(user._id);
 
-        const newAccess = generateAccessToken(user._id);
-        const newRefresh = generateRefreshToken(user._id);
-        const hashedNewRefresh = await hashToken(newRefresh);
-
-        user.refreshToken = hashedNewRefresh;
+        // Hasher et stocker le nouveau refresh token
+        user.refreshToken = await hashToken(newRefreshToken);
         await user.save();
 
         logger.info(`Refresh token success: ${user.email}`);
 
-        res.json({ accessToken: newAccess, refreshToken: newRefresh });
+        res.json({
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken
+        });
+
     } catch (err) {
         logger.error(`Refresh token error: ${err.message}`);
-        return res.status(401).json({ message: "Refresh token invalide ou expiré" });
+        res.status(401).json({ message: "Refresh token invalide ou expiré" });
     }
 };
